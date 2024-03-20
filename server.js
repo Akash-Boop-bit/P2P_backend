@@ -1,9 +1,6 @@
 // server.js
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const fs = require("fs");
 const cors = require("cors");
@@ -11,7 +8,6 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
 
 // const secretKey = "akash"; // Replace with your secret key
 // const users = []; // Temporary storage for registered users
@@ -135,20 +131,6 @@ app.post("/api/download", (req, res) => {
   }
 });
 
-io.on("connection", (socket) => {
-  console.log("A user connected");
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-
-  socket.on("offer", (offer) => {
-    // Verify JWT token here
-    // If token is valid, proceed with file transfer
-    // Otherwise, reject the request
-    socket.broadcast.emit("offer", offer);
-  });
-});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
