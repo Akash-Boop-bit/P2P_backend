@@ -49,11 +49,11 @@ const upload = multer({ storage });
 
 // File upload endpoint
 
-function parseExpiryDate(dateString) {
-  const [day, month, year, hour, min, sec] = dateString.split("/").map(Number);
-  // Month is zero-based in Date object, so we subtract 1 from month
-  return new Date(year, month - 1, day, hour, min, sec);
-}
+// function parseExpiryDate(dateString) {
+//   const [day, month, year, hour, min, sec] = dateString.split("/").map(Number);
+//   // Month is zero-based in Date object, so we subtract 1 from month
+//   return new Date(year, month - 1, day, hour, min, sec);
+// }
 
 function cleanupExpiredFiles() {
   const currentTime = Date.now();
@@ -67,14 +67,13 @@ function cleanupExpiredFiles() {
 }
 
 // Periodic cleanup task (every hour, for example)
-setInterval(cleanupExpiredFiles, 10000); // 3600000 milliseconds = 1 hour
+setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
   const fileContent = fs.readFileSync(req.file.path, "utf8");
-  const expiryDate = expiry ? parseExpiryDate(expiry) : null;
 
-  const expiryTime = expiryDate ? expiryDate.getTime() : null;
+  const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
 
   const filePath = req.file.path;
   const fileName = path.basename(filePath);
@@ -130,7 +129,6 @@ app.post("/api/download", (req, res) => {
     res.json({ msg: "something went wrong" });
   }
 });
-
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
