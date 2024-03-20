@@ -52,17 +52,32 @@ const upload = multer({ storage });
 // });
 
 // File upload endpoint
+
+function cleanupExpiredFiles() {
+  const currentTime = Date.now();
+  fileData.forEach((item, index) => {
+      if (item.expiryTime && currentTime > item.expiryTime) {
+          fileData.splice(index, 1);
+          console.log(`deleted ${item.fileName}`)
+      }
+  });
+}
+
+// Periodic cleanup task (every hour, for example)
+setInterval(cleanupExpiredFiles, 2*60000); // 3600000 milliseconds = 1 hour
+
 app.post("/api/upload", upload.single("file"), (req, res) => {
-  const { password } = req.body;
+  const { password, particular, inputs, expiry } = req.body;
   const fileContent = fs.readFileSync(req.file.path, "utf8");
+  const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
+
 
   const filePath = req.file.path;
   const fileName = path.basename(filePath);
-  console.log(fileName);
-
+  console.log(inputs);
 
   // Store file data and password in the 2D array
-  fileData.push({ password, fileContent, fileName });
+  fileData.push({ password, fileContent, fileName, particular, inputs, expiryTime });
 
   // Remove uploaded file
   fs.unlinkSync(req.file.path);
@@ -72,14 +87,36 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
 // File download endpoint
 app.post("/api/download", (req, res) => {
-  const { password } = req.body;
-  const file = fileData.find((item) => item.password === password);
+  const { password, IP } = req.body;
+  try {
+    const file = fileData.find((item) => item.password === password);
 
-  // Verify password and send file data if correct
-  if (file) {
-    res.json({ filename: file.fileName, fileData: file.fileContent });
-  } else {
-    res.status(401).json({ message: "Invalid password" });
+    // Verify password and send file data if correct
+    if (file) {
+      if (file.particular !== "") {
+        if (file.particular !== IP) {
+          console.log("wrong ip", file.particular, IP);
+          res.json({ msg: "wrong ip" });
+          return false;
+        }
+      }
+      if (file.inputs) {
+        let arr = file.inputs;
+        console.log(arr);
+        let resarr = arr.split(",");
+        console.log(resarr);
+        if (resarr.includes(IP)) {
+          res.json({ msg: "restricted ip" });
+          return false;
+        }
+      }
+      res.json({ filename: file.fileName, fileData: file.fileContent });
+    } else {
+      console.log("invalid password");
+      res.json({ msg: "invalid password" });
+    }
+  } catch (e) {
+    res.json({ msg: "something went wrong" });
   }
 });
 
