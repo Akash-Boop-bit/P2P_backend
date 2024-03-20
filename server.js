@@ -53,24 +53,32 @@ const upload = multer({ storage });
 
 // File upload endpoint
 
+function parseExpiryDate(dateString) {
+  const [day, month, year, hour, min, sec] = dateString.split('/').map(Number);
+  // Month is zero-based in Date object, so we subtract 1 from month
+  return new Date(year, month - 1, day, hour, min, sec);
+}
+
 function cleanupExpiredFiles() {
   const currentTime = Date.now();
   fileData.forEach((item, index) => {
-      if (item.expiryTime && currentTime > item.expiryTime) {
-          fileData.splice(index, 1);
-          console.log(`deleted ${item.fileName}`)
-          console.log(fileData)
-      }
+    if (item.expiryTime && currentTime > item.expiryTime) {
+      fileData.splice(index, 1);
+      console.log(`deleted ${item.fileName}`);
+      console.log(fileData);
+    }
   });
 }
 
 // Periodic cleanup task (every hour, for example)
-setInterval(cleanupExpiredFiles, 2*60000); // 3600000 milliseconds = 1 hour
+setInterval(cleanupExpiredFiles, 2 * 60000); // 3600000 milliseconds = 1 hour
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
   const fileContent = fs.readFileSync(req.file.path, "utf8");
-  const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
+  const expiryDate = expiry ? parseExpiryDate(expiry) : null;
+
+  const expiryTime = expiryDate ? expiryDate.getTime() : null;
 
 
   const filePath = req.file.path;
@@ -78,7 +86,14 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   console.log(inputs);
 
   // Store file data and password in the 2D array
-  fileData.push({ password, fileContent, fileName, particular, inputs, expiryTime });
+  fileData.push({
+    password,
+    fileContent,
+    fileName,
+    particular,
+    inputs,
+    expiryTime,
+  });
 
   // Remove uploaded file
   fs.unlinkSync(req.file.path);
