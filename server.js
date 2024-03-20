@@ -61,6 +61,7 @@ function parseExpiryDate(dateString) {
 
 function cleanupExpiredFiles() {
   const currentTime = Date.now();
+  console.log("hello");
   fileData.forEach((item, index) => {
     if (item.expiryTime && currentTime > item.expiryTime) {
       fileData.splice(index, 1);
@@ -71,7 +72,7 @@ function cleanupExpiredFiles() {
 }
 
 // Periodic cleanup task (every hour, for example)
-setInterval(cleanupExpiredFiles, 2 * 60000); // 3600000 milliseconds = 1 hour
+setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
