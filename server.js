@@ -61,7 +61,6 @@ function parseExpiryDate(dateString) {
 
 function cleanupExpiredFiles() {
   const currentTime = Date.now();
-  console.log("hello");
   fileData.forEach((item, index) => {
     if (item.expiryTime && currentTime > item.expiryTime) {
       fileData.splice(index, 1);
@@ -72,7 +71,7 @@ function cleanupExpiredFiles() {
 }
 
 // Periodic cleanup task (every hour, for example)
-setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
+setInterval(cleanupExpiredFiles, 10000); // 3600000 milliseconds = 1 hour
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
@@ -83,7 +82,6 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
   const filePath = req.file.path;
   const fileName = path.basename(filePath);
-  console.log(inputs);
 
   // Store file data and password in the 2D array
   fileData.push({
@@ -98,6 +96,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   // Remove uploaded file
   fs.unlinkSync(req.file.path);
 
+  console.log("file uploaded successfully");
   res.json({ message: "File uploaded successfully" });
 });
 
