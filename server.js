@@ -59,6 +59,7 @@ function cleanupExpiredFiles() {
       if (item.expiryTime && currentTime > item.expiryTime) {
           fileData.splice(index, 1);
           console.log(`deleted ${item.fileName}`)
+          console.log(fileData)
       }
   });
 }
