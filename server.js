@@ -54,7 +54,7 @@ const upload = multer({ storage });
 // File upload endpoint
 
 function parseExpiryDate(dateString) {
-  const [day, month, year, hour, min, sec] = dateString.split('/').map(Number);
+  const [day, month, year, hour, min, sec] = dateString.split("/").map(Number);
   // Month is zero-based in Date object, so we subtract 1 from month
   return new Date(year, month - 1, day, hour, min, sec);
 }
@@ -79,7 +79,6 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   const expiryDate = expiry ? parseExpiryDate(expiry) : null;
 
   const expiryTime = expiryDate ? expiryDate.getTime() : null;
-
 
   const filePath = req.file.path;
   const fileName = path.basename(filePath);
