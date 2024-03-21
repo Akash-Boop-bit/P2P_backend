@@ -120,7 +120,7 @@ app.post("/api/download", (req, res) => {
           return false;
         }
       }
-      res.json({ filePass: file.password });
+      res.json({ msg: 'true' });
     } else {
       console.log("invalid password");
       res.json({ msg: "invalid password" });
