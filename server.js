@@ -17,16 +17,7 @@ app.use(express.json());
 app.use(cors());
 
 // Set up Multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage });
+const upload = multer({ dest: "uploads" });
 
 // User registration endpoint
 // app.post("/api/register", (req, res) => {
@@ -59,6 +50,12 @@ function cleanupExpiredFiles() {
   const currentTime = Date.now();
   fileData.forEach((item, index) => {
     if (item.expiryTime && currentTime > item.expiryTime) {
+      fs.unlink(item.filePath, (err) => {
+        if (err) {
+          console.error("Error deleting file:", err);
+          return;
+        }
+      });
       fileData.splice(index, 1);
       console.log(`deleted ${item.fileName}`);
       console.log(fileData);
@@ -71,25 +68,26 @@ setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
-  const fileContent = fs.readFileSync(req.file.path, "utf8");
+  // const fileContent = fs.readFileSync(req.file.path, "utf-8");
 
   const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
 
   const filePath = req.file.path;
-  const fileName = path.basename(filePath);
+  const fileName = req.file.originalname;
 
   // Store file data and password in the 2D array
   fileData.push({
     password,
-    fileContent,
+    filePath,
     fileName,
     particular,
     inputs,
     expiryTime,
   });
+  console.log("file:", filePath);
 
   // Remove uploaded file
-  fs.unlinkSync(req.file.path);
+  // fs.unlinkSync(req.file.path);
 
   console.log("file uploaded successfully");
   res.json({ message: "File uploaded successfully" });
@@ -120,7 +118,7 @@ app.post("/api/download", (req, res) => {
           return false;
         }
       }
-      res.json({ filename: file.fileName, fileData: file.fileContent });
+      res.json({ filename: file.fileName });
     } else {
       console.log("invalid password");
       res.json({ msg: "invalid password" });
@@ -128,6 +126,17 @@ app.post("/api/download", (req, res) => {
   } catch (e) {
     res.json({ msg: "something went wrong" });
   }
+});
+app.get("/file/:fileName", (req, res) => {
+  let file;
+  let filenam;
+  fileData.forEach((item)=>{
+    if(item.fileName === req.params.fileName){
+      file = item.filePath
+      filenam = item.fileName
+    }
+  })
+  res.download(file, filenam);
 });
 
 const PORT = process.env.PORT || 5000;
