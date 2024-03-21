@@ -69,8 +69,11 @@ setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry } = req.body;
   // const fileContent = fs.readFileSync(req.file.path, "utf-8");
+  console.log("expiry: ", expiry);
 
   const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
+
+  console.log("expiryTime: ", expiryTime);
 
   const filePath = req.file.path;
   const fileName = req.file.originalname;
@@ -84,7 +87,6 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     inputs,
     expiryTime,
   });
-  console.log("file:", filePath);
 
   // Remove uploaded file
   // fs.unlinkSync(req.file.path);
@@ -118,7 +120,7 @@ app.post("/api/download", (req, res) => {
           return false;
         }
       }
-      res.json({ filename: file.fileName });
+      res.json({ filePass: file.password });
     } else {
       console.log("invalid password");
       res.json({ msg: "invalid password" });
@@ -127,15 +129,15 @@ app.post("/api/download", (req, res) => {
     res.json({ msg: "something went wrong" });
   }
 });
-app.get("/file/:fileName", (req, res) => {
+app.get("/file/:filePass", (req, res) => {
   let file;
   let filenam;
-  fileData.forEach((item)=>{
-    if(item.fileName === req.params.fileName){
-      file = item.filePath
-      filenam = item.fileName
+  fileData.forEach((item) => {
+    if (item.password === req.params.filePass) {
+      file = item.filePath;
+      filenam = item.fileName;
     }
-  })
+  });
   res.download(file, filenam);
 });
 
