@@ -63,7 +63,7 @@ const checkUser = () => {
 };
 
 // check if the user is still on
-setInterval(checkUser, 30000);
+setInterval(checkUser, 20000);
 
 const userCheck = () => {
   let arr = [];
