@@ -42,7 +42,7 @@ setInterval(cleanupExpiredFiles, 1000);
 const checkUser = () => {
   users.forEach((e, i) => {
     e.here -= 1;
-    if (e.here === -1) {
+    if (e.here < 0) {
       fileData.forEach((item, index) => {
         if (item.userid === e.userid) {
           fs.unlink(item.filePath, (err) => {
@@ -53,7 +53,7 @@ const checkUser = () => {
           });
           fileData.splice(index, 1);
           console.log(`deleted ${item.fileName}`);
-          console.log(fileData)
+          console.log(fileData);
         }
       });
       users.slice(i, 1);
@@ -65,13 +65,13 @@ const checkUser = () => {
 // check if the user is still on
 setInterval(checkUser, 30000);
 
-const userCheck = ()=>{
+const userCheck = () => {
   let arr = [];
-  users.forEach((item)=>{
-    arr.push(item.userid)
-  })
-  fileData.forEach((item, index)=>{
-    if(!(arr.includes(item.userid))){
+  users.forEach((item) => {
+    arr.push(item.userid);
+  });
+  fileData.forEach((item, index) => {
+    if (!arr.includes(item.userid)) {
       fs.unlink(item.filePath, (err) => {
         if (err) {
           console.error("Error deleting file:", err);
@@ -80,13 +80,13 @@ const userCheck = ()=>{
       });
       fileData.splice(index, 1);
       console.log(`deleted ${item.fileName}`);
-      console.log(fileData)
+      console.log(fileData);
     }
-  })
-}
+  });
+};
 
 // Recheck if any files are left of deleted users
-setInterval(userCheck, 50000)
+setInterval(userCheck, 2000);
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry, userid } = req.body;
