@@ -65,6 +65,29 @@ const checkUser = () => {
 // check if the user is still on
 setInterval(checkUser, 30000);
 
+const userCheck = ()=>{
+  let arr = [];
+  users.forEach((item)=>{
+    arr.push(item.userid)
+  })
+  fileData.forEach((item, index)=>{
+    if(!(arr.includes(item.userid))){
+      fs.unlink(item.filePath, (err) => {
+        if (err) {
+          console.error("Error deleting file:", err);
+          return;
+        }
+      });
+      fileData.splice(index, 1);
+      console.log(`deleted ${item.fileName}`);
+      console.log(fileData)
+    }
+  })
+}
+
+// Recheck if any files are left of deleted users
+setInterval(userCheck, 50000)
+
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const { password, particular, inputs, expiry, userid } = req.body;
   // const fileContent = fs.readFileSync(req.file.path, "utf-8");
