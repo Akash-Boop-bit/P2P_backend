@@ -1,6 +1,7 @@
 // server.js
 const express = require("express");
 const http = require("http");
+// const socketIo = require("socket.io");
 const multer = require("multer");
 const fs = require("fs");
 const cors = require("cors");
@@ -9,42 +10,14 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 
-// const secretKey = "akash"; // Replace with your secret key
-// const users = []; // Temporary storage for registered users
 const fileData = [];
+const users = [];
 
 app.use(express.json());
 app.use(cors());
 
 // Set up Multer for file uploads
 const upload = multer({ dest: "uploads" });
-
-// User registration endpoint
-// app.post("/api/register", (req, res) => {
-//   const { username, password } = req.body;
-//   const hashedPassword = bcrypt.hashSync(password, 10);
-//   users.push({ username, password: hashedPassword });
-//   res.json({ message: "User registered successfully" });
-// });
-
-// // User login endpoint
-// app.post("/api/login", (req, res) => {
-//   const { username, password } = req.body;
-//   const user = users.find((u) => u.username === username);
-//   if (!user || !bcrypt.compareSync(password, user.password)) {
-//     return res.status(401).json({ message: "Invalid credentials" });
-//   }
-//   const token = jwt.sign({ username }, secretKey, { expiresIn: "1h" });
-//   res.json({ token });
-// });
-
-// File upload endpoint
-
-// function parseExpiryDate(dateString) {
-//   const [day, month, year, hour, min, sec] = dateString.split("/").map(Number);
-//   // Month is zero-based in Date object, so we subtract 1 from month
-//   return new Date(year, month - 1, day, hour, min, sec);
-// }
 
 function cleanupExpiredFiles() {
   const currentTime = Date.now();
@@ -64,16 +37,41 @@ function cleanupExpiredFiles() {
 }
 
 // Periodic cleanup task (every hour, for example)
-setInterval(cleanupExpiredFiles, 1000); // 3600000 milliseconds = 1 hour
+setInterval(cleanupExpiredFiles, 1000);
+
+const checkUser = () => {
+  users.forEach((e, i) => {
+    e.here -= 1;
+    if (e.here === -1) {
+      fileData.forEach((item, index) => {
+        if (item.userid === e.userid) {
+          fs.unlink(item.filePath, (err) => {
+            if (err) {
+              console.error("Error deleting file:", err);
+              return;
+            }
+          });
+          fileData.splice(index, 1);
+          console.log(`deleted ${item.fileName}`);
+        }
+      });
+      users.slice(i, 1);
+      console.log("deleted user: ", e.userid);
+    }
+  });
+};
+
+// check if the user is still on
+setInterval(checkUser, 30000);
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
-  const { password, particular, inputs, expiry } = req.body;
+  const { password, particular, inputs, expiry, userid } = req.body;
   // const fileContent = fs.readFileSync(req.file.path, "utf-8");
   console.log("expiry: ", expiry);
 
   const expiryTime = expiry ? Date.now() + parseInt(expiry) : null;
 
-  console.log("expiryTime: ", expiryTime);
+  console.log("userid: ", userid);
 
   const filePath = req.file.path;
   const fileName = req.file.originalname;
@@ -86,6 +84,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     particular,
     inputs,
     expiryTime,
+    userid,
   });
 
   // Remove uploaded file
@@ -93,6 +92,27 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
   console.log("file uploaded successfully");
   res.json({ message: "File uploaded successfully" });
+});
+
+//check the user
+app.get("/id/:userid", (req, res) => {
+  console.log("id came from: ", req.params.userid);
+  let presence = false;
+  users.forEach((item) => {
+    if (item.userid === req.params.userid) {
+      presence = true;
+      item.here = 1;
+    }
+  });
+  if (!presence) {
+    let here = 1;
+    let userid = req.params.userid;
+    users.push({
+      userid,
+      here,
+    });
+  }
+  res.send("ok");
 });
 
 // File download endpoint
@@ -120,7 +140,7 @@ app.post("/api/download", (req, res) => {
           return false;
         }
       }
-      res.json({ msg: 'true' });
+      res.json({ msg: "true" });
     } else {
       console.log("invalid password");
       res.json({ msg: "invalid password" });
@@ -140,6 +160,44 @@ app.get("/file/:filePass", (req, res) => {
   });
   res.download(file, filenam);
 });
+
+// const io = socketIo(server, {
+//   cors: {
+//     origin: "http://localhost:5173",
+//     methods: ["GET", "POST"],
+//   },
+// });
+
+// io.on("connection", (socket) => {
+//   console.log("User connected");
+
+//   socket.on("user_connected", (userData) => {
+//     console.log("User connected: " + userData.userid);
+//     // Perform actions when a user connects
+//     // For example, you can save the user information in the database
+//   });
+
+//   socket.on("user_disconnected", (data, callback) => {
+//     console.log("user disconnected: " + data);
+//     // fileData.forEach((item, index) => {
+//     //   if (item.userid === userData.userid) {
+//     //     fs.unlink(item.filePath, (err) => {
+//     //       if (err) {
+//     //         console.error("Error deleting file:", err);
+//     //         return;
+//     //       }
+//     //     });
+//     //     fileData.splice(index, 1);
+//     //     console.log(`deleted ${item.fileName}`);
+//     //   }
+//     // });
+//     callback();
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log("User disconnect");
+//   });
+// });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
