@@ -53,6 +53,7 @@ const checkUser = () => {
           });
           fileData.splice(index, 1);
           console.log(`deleted ${item.fileName}`);
+          console.log(fileData)
         }
       });
       users.slice(i, 1);
